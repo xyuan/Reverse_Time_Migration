@@ -41,7 +41,7 @@ void SecondOrderComputationKernel::Computation_syclDevice(
 		const size_t wnx = grid->window_size.window_nx;
 		const size_t wnz = grid->window_size.window_nz;
 
-		auto global_range = range<2>(wnx - 2 * half_length, wnz - 2 * half_length);
+		auto global_range = range<2>(grid->compute_nx, wnz - 2 * half_length);
 		auto local_range = range<2>(parameters->block_x, parameters->block_z);
 		auto global_offset = id<2>(half_length, half_length);
 		auto global_nd_range = nd_range<2>(global_range, local_range, global_offset);
@@ -177,7 +177,7 @@ void SecondOrderComputationKernel::FirstTouch(float *ptr, uint nx, uint nz,
 
 	AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh){
 
-		auto global_range = range<2>(nx - 2 * half_length, nz - 2 * half_length);
+		auto global_range = range<2>(grid->compute_nx, nz - 2 * half_length);
 		auto local_range = range<2>(parameters->block_x, parameters->block_z);
 		auto global_offset = id<2>(half_length, half_length);
 		auto global_nd_range = nd_range<2>(global_range, local_range, global_offset);

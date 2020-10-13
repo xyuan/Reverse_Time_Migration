@@ -102,6 +102,7 @@ HomogenousModelHandler ::ReadModel(vector<string> filenames,
       AcousticDpcComputationParameters::device_queue->get_device(),
       AcousticDpcComputationParameters::device_queue->get_context());
   grid->velocity = &(grid->velocity[16 - parameters->half_length]);
+  computational_kernel->SetGridBox(grid);
   computational_kernel->FirstTouch(grid->velocity, nx, nz, ny);
   AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh) {
     cgh.memset(grid->velocity, 0, sizeof(float) * model_size);
