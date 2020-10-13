@@ -41,14 +41,15 @@ void SecondOrderComputationKernel::Computation_syclDevice(
 		const size_t wnx = grid->window_size.window_nx;
 		const size_t wnz = grid->window_size.window_nz;
 
-		auto global_range = range<2>(grid->compute_nx, wnz - 2 * half_length);
+		auto global_range = range<2>(wnx - 2 * half_length, wnz - 2 * half_length);
 		auto local_range = range<2>(parameters->block_x, parameters->block_z);
-		auto global_nd_range = nd_range<2>(global_range, local_range);
+		auto global_offset = id<2>(half_length, half_length);
+		auto global_nd_range = nd_range<2>(global_range, local_range, global_offset);
 
 		cgh.parallel_for<class secondOrderComputationKernel>(
 				global_nd_range, [=](nd_item<2> it) {
-			int x = it.get_global_id(0) + half_length;
-			int z = it.get_global_id(1) + half_length;
+			int x = it.get_global_id(0);
+			int z = it.get_global_id(1);
 
 			int idx = wnx * z + x;
 
@@ -173,27 +174,27 @@ void SecondOrderComputationKernel::FirstTouch(float *ptr, uint nx, uint nz,
 		uint ny) {
 	uint half_length = parameters->half_length;
 
-//
-//	AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh){
-//		auto global_range = range<2>(nx , nz);
-//		auto local_range = range<2>(parameters->block_x, parameters->block_z);
-//		sycl::nd_range<2>workgroup_range(global_range, local_range); cgh.parallel_for<class
-//		secondOrderComputation_dpcpp>(workgroup_range,[=](nd_item<2> it){
-//
-//			int x = it.get_global_id(0);
-//			int z = it.get_global_id(1);
-//
-//			if(
-//					(x > half_length) && (x < nx - half_length) &&
-//					(z > half_length) && (z < nz - half_length)
-//			){
-//
-//				int idx = x + nx * z;
-//				ptr[idx] = 0.0f;
-//			}
-//		});
-//	});
-//	AcousticDpcComputationParameters::device_queue->wait();
+
+	AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh){
+
+		auto global_range = range<2>(nx - 2 * half_length, nz - 2 * half_length);
+		auto local_range = range<2>(parameters->block_x, parameters->block_z);
+		auto global_offset = id<2>(half_length, half_length);
+		auto global_nd_range = nd_range<2>(global_range, local_range, global_offset);
+
+		cgh.parallel_for<class secondOrderComputationKernel>(
+				global_nd_range, [=](nd_item<2> it) {
+
+			int x = it.get_global_id(0);
+			int z = it.get_global_id(1);
+
+			int idx = nx * z + x;
+
+			ptr[idx] = 0.0f;
+
+		});
+	});
+	AcousticDpcComputationParameters::device_queue->wait();
 }
 
 void SecondOrderComputationKernel::SetComputationParameters(
