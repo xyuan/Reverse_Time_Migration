@@ -237,7 +237,7 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
             << grid->reference_point.y << std::endl;
   unsigned int model_size = nx * nz * ny;
 
-
+  computational_kernel->SetGridBox(grid);
   grid->velocity = (float *)cl::sycl::malloc_device(
       sizeof(float) * model_size + 16 * sizeof(float),
       AcousticDpcComputationParameters::device_queue->get_device(),
